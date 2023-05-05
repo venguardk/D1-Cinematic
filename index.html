@@ -7,13 +7,67 @@
     <title>D1 Cinematic</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.js" integrity="sha512-H05oT7BAjM9Ai1IaFX9zr61NtE2e1P0MkTz3AZXBnseaJSAOt2FGMFJ+vVGutaJxEGA1jxUiYsTBYQNE08/Erw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
+        class Loading extends Phaser.Scene{
+            constructor(){
+                super('loading');
+            }
+            preload(){
+                // progress bar
+                const progress = this.add.graphics();
+                this.add.text(345, 250, 'Loading...');
+                progress.fillStyle(0x222222, 0.8);
+                progress.fillRect(240, 270, 320, 50);
+
+
+                this.load.on('progress', value => {
+                    progress.clear();
+                    progress.fillStyle(0xffffff, 1);
+                    progress.fillRect(240, 280, 300 * value, 30);
+                });
+
+                this.load.on('complete', () => {
+                   //progress.destroy();
+                   this.add.text(320, 330, 'Click to begin');
+                });
+
+                // loading assets
+                this.load.path = "./assets/";
+                this.load.video('logo', 'Studio Intro.mp4');
+                this.load.video('teaser', 'Egg Hatching.mp4');
+                this.load.image('start', 'Start Menu.jpg');
+                this.load.audio('dial', 'Dial up.mp3');
+                this.load.audio('hatch', 'Hatching.mp3');
+
+            }
+            create(){
+                // this.add.text(240, 200, "Click to begin");
+                this.input.on('pointerdown', () => this.scene.start('studio'));
+                
+            }  
+        }
+
         class Studio extends Phaser.Scene{
             constructor(){
                 super('studio');
             }
             create(){
-                this.add.text(10,10,"Click to begin");
+                this.sound.play('dial');
+                const videoLogo = this.add.video(400, 300, 'logo');
+                videoLogo.on('locked', () => {
+                    let message = this.add.text(640, 100, 'Click to play video');
+                    videoLogo.on('unlocked', () => {
+                        message.destroy();
+                    });
+                });
+                videoLogo.play();
+
                 this.input.on('pointerdown', () => this.scene.start('intro'));
+                
+                this.time.delayedCall(2000, () =>{
+                    this.cameras.main.fadeOut(2000, 0, 0, 0);
+                });
+                
+                this.time.delayedCall(5000, () =>this.scene.start('intro'));
             }
         }
 
@@ -22,14 +76,91 @@
                 super('intro');
             }
             create(){
-                this.add.text(10,10,"Intro scene");
+                this.sound.play('hatch');
+                const videoIntro = this.add.video(400, 300, 'teaser');
+                videoIntro.on('locked', () =>{
+                    let message = this.add.text(640, 100, 'Click to play video');
+                    videoIntro.on('unlocked', () => {
+                        message.destroy();
+                    });
+                });
+                videoIntro.play();
+
+                this.input.on('pointerdown', () => this.scene.start('menu'));
+
+                this.time.delayedCall(3000, () =>this.cameras.main.fadeOut(2000, 0, 0, 0));
+                this.time.delayedCall(6000, () => this.scene.start('menu'));
+            }
+        }
+
+        class Menu extends Phaser.Scene{
+            constructor(){
+                super('menu');
+            }
+            create(){
+                this.imageBG = this.add.image(400, 300, 'start',);
+                this.imageBG.setScale(0.63);
+
+                this.rect = this.add.graphics();
+                this.rect.fillStyle(0x0E73D2, 0.5);
+                this.rect.fillRect(400, 10, 400, 100);
+
+                this.tweens.add({
+                    targets: [this.rect],
+                    x: -400,
+                    y: 0,
+                    alpha: 1,
+                    duration: 2000,
+                    ease: 'Linear',
+                });
+
+                this.time.delayedCall(2000, () => {
+                    this.add.text(10, 25, "Dragon's Flight", {
+                        fontFamily:'Georgia, serif', 
+                        fontSize: 50,
+                    })
+                });
+
+                this.time.delayedCall(2500, () => {
+                    let box = this.add.text(20, 200,
+`New Game
+
+Options
+
+Credits`
+                    );
+                    this.graphics = this.add.graphics();
+                    this.graphics.fillStyle(0xffffff, 1);
+                    this.graphics.fillCircle(100, 240, 5);
+                });
+
+                this.input.on('pointerdown', () => this.scene.start('credits'));
+                
+                this.time.delayedCall(10000, () => this.scene.start('credits'));
+            }
+        }
+
+        class Credits extends Phaser.Scene{
+            constructor(){
+                super('credits');
+            }
+            create(){
+                this.add.text(20, 20, 'Credits:');
+
+                // multi-line text
+                let box = this.add.text(20, 50,
+`Everything: Keven Paw
+Audio: made with Google Recorder
+Art: made with Procreate`
+                );
+                this.input.on('pointerdown', () => this.scene.start('loading'));
             }
         }
 
         new Phaser.Game({
-            width: 640,
-            height: 480,
-            scene:[Studio, Intro],
+            width: 800,
+            height: 600,
+            scene:[Loading, Studio, Intro, Menu, Credits],
         });
     </script>
 </head>
